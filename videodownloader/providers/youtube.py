@@ -43,24 +43,39 @@ class YouTube(Provider):
         super(YouTube, self).__init__(id, **kwargs)
 
         #Load video meta information
-        url  = 'http://www.youtube.com/get_video_info?video_id=%s' % self.id
+        url  = 'http://youtube.com/get_video_info?video_id=%s' % self.id
         self._debug('YouTube', '__init__', 'Downloading "%s"...' % url)
-        self._html = super(YouTube, YouTube)._download(url).read()
+        self._html = super(YouTube, YouTube)._download(url).read().decode('utf-8')
+
+        self._info = parse_params(self._html)
+
+        def info(name):
+            return self._info[name][0]
 
         #Get available formats
-        self.formats = set()
-        for match in re.finditer(r'itag%3D(\d+)', self._html):
-            if match.group(1) not in YouTube.FORMATS.keys():
-                print 'WARNING: Unknown format "%s" found.' % match.group(1)
-            self.formats.add(match.group(1))
-        self._debug('YouTube', '__init__', 'formats', ', '.join(self.formats))
+        self.formats = dict()
+        for fmt_full in self._info['itag']:
+            try:
+                fmt, full_params = fmt_full.split(',', 1)
+            except ValueError:
+                fmt = fmt_full
+                full_params = None
+
+            if full_params:
+                try:
+                    _, url = full_params.split("=", 1)
+                except ValueError:
+                    url = None
+
+            if fmt not in YouTube.FORMATS:
+                print 'WARNING: Unknown format "%s" found.' % fmt
+            self.formats[fmt] = url
+        for f in self.formats:
+            self._debug('YouTube', '__init__', 'format', '%s=%s' % (f, self.formats[f]))
 
         #Get video title if not explicitly set
         if self.title is id:
-            match = re.search(r'&title=([^&]+)', self._html, re.DOTALL)
-            if match:
-                self.title = urllib.unquote_plus(match.group(1))
-                self._debug('YouTube', '__init__', 'title', self.title)
+            self.title = info('title')
         self._debug('YouTube', '__init__', 'title', self.title)
 
         #Get video filename if not explicity set
