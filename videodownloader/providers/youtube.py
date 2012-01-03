@@ -37,6 +37,7 @@ class YouTube(Provider):
         '43': '640x360 VP8/Vorbis Stereo MP4',
         '44': '854x480 VP8/Vorbis Stereo MP4',
         '45': '1280x720 VP8/Vorbis Stereo MP4',
+        '46': '1920x1080 VP8/Vorbis Stereo MP4',
     }
 
     def __init__(self, id, **kwargs):
