@@ -90,7 +90,7 @@ class YouTubeTests(TestCase):
         self.assertEqual(YouTubeTests.video.duration, 287)
 
     def test_formats(self):
-        self.assertEqual(YouTubeTests.video.formats, set(['5', '18', '37', '35', '22', '34', '43', '44', '45']))
+        self.assertEqual(set(YouTubeTests.video.formats.keys()), set(['5', '18', '37', '35', '22', '34', '43', '44', '45', '46']))
 
     def test_keywords(self):
         self.assertNotEqual(YouTubeTests.video.keywords, set([]))

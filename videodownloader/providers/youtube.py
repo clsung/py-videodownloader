@@ -24,7 +24,7 @@ import urlparse
 parse_params = lambda x: urlparse.parse_qs(urllib.unquote(x))
 
 class YouTube(Provider):
-    FORMAT_PRIORITY = ['37', '22', '45', '44', '35', '43', '18', '34', '5']
+    FORMAT_PRIORITY = ['37', '22', '46', '45', '44', '35', '43', '18', '34', '5']
     FORMATS = {
         '5' : '320x240 H.263/MP3 Mono FLV',
         '13': '176x144 3GP/AMR Mono 3GP',
@@ -47,6 +47,7 @@ class YouTube(Provider):
         url  = 'http://youtube.com/get_video_info?video_id=%s' % self.id
         self._debug('YouTube', '__init__', 'Downloading "%s"...' % url)
         self._html = super(YouTube, YouTube)._download(url).read().decode('utf-8')
+        self._content = urllib.unquote(self._html)
 
         self._info = parse_params(self._html)
 
@@ -55,22 +56,8 @@ class YouTube(Provider):
 
         #Get available formats
         self.formats = dict()
-        for fmt_full in self._info['itag']:
-            try:
-                fmt, full_params = fmt_full.split(',', 1)
-            except ValueError:
-                fmt = fmt_full
-                full_params = None
-
-            if full_params:
-                try:
-                    _, url = full_params.split("=", 1)
-                except ValueError:
-                    url = None
-
-            if fmt not in YouTube.FORMATS:
-                print 'WARNING: Unknown format "%s" found.' % fmt
-            self.formats[fmt] = url
+        self._get_available_format(r'url=(?P<url>http.+?)&itag=(?P<fmt>\d+)(?:,|&)')
+        self._get_available_format(r'itag=(?P<fmt>http.+?)&url=(?P<url>\d+),')
         for f in self.formats:
             self._debug('YouTube', '__init__', 'format', '%s=%s' % (f, self.formats[f]))
 
@@ -134,6 +121,15 @@ class YouTube(Provider):
 
         self._debug('YouTube', 'get_download_url', 'url', url)
         return url
+
+    def _get_available_format(self, regexp):
+        for match in \
+            re.finditer(regexp, self._content):
+            url = match.group("url")
+            fmt = match.group("fmt")
+            if fmt not in YouTube.FORMATS:
+                print 'WARNING: Unknown format "%s" found.' % fmt
+            self.formats[fmt] = urllib.unquote(url)
 
     def _get_best_format(self):
         for format in YouTube.FORMAT_PRIORITY:
